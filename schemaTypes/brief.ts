@@ -5,14 +5,8 @@ export default defineType({
   title: 'Brief',
   type: 'document',
   groups: [
-    {
-      name: 'source',
-      title: 'Source',
-    },
-    {
-      name: 'media',
-      title: 'Media',
-    },
+    {name: 'source', title: 'Source'},
+    {name: 'media', title: 'Media'},
   ],
   fields: [
     defineField({
@@ -20,6 +14,7 @@ export default defineType({
       title: 'Title',
       description: 'Korean headline. Lead with the felt impact, not the bare number.',
       type: 'string',
+      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: 'titleEn',
@@ -32,10 +27,7 @@ export default defineType({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
-      options: {
-        source: 'titleEn',
-        maxLength: 96,
-      },
+      options: {source: 'titleEn', maxLength: 96},
     }),
     defineField({
       name: 'summary',
@@ -59,21 +51,25 @@ export default defineType({
       name: 'topic',
       title: 'Topic',
       type: 'reference',
-      to: {type: 'briefTopic'},
+      to: [{type: 'topic'}],
+      validation: (Rule) => Rule.required(),
     }),
 
     /* Source */
     defineField({
-      name: 'sourceUrl',
-      title: 'Source URL',
-      type: 'string',
+      name: 'publisher',
+      title: 'Publisher',
+      description: 'The body that published this. Reused across briefs.',
+      type: 'reference',
+      to: [{type: 'publisher'}],
       group: 'source',
+      validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: 'sourceName',
-      title: 'Source Name',
-      description: 'e.g. Stats NZ, RBNZ, IRD.',
-      type: 'string',
+      name: 'sourceUrl',
+      title: 'Source URL',
+      description: 'The specific page on the publisher’s site. Unique to this brief.',
+      type: 'url',
       group: 'source',
     }),
     defineField({
@@ -89,16 +85,38 @@ export default defineType({
         allowTimeZoneSwitch: false,
       },
     }),
+    defineField({
+      name: 'deadline',
+      title: 'Deadline',
+      description: 'Only set if the item has a real action deadline or effective date.',
+      type: 'datetime',
+      group: 'source',
+      options: {
+        dateFormat: 'DD-MM-YYYY',
+        timeFormat: 'HH:mm',
+        displayTimeZone: 'Pacific/Auckland',
+        allowTimeZoneSwitch: false,
+      },
+    }),
   ],
 
   preview: {
     select: {
       title: 'title',
-      author: 'author.name',
+      publisher: 'publisher.shortName',
+      publishedAt: 'publishedAt',
     },
-    prepare(selection) {
-      const {author} = selection
-      return {...selection, subtitle: author && `by ${author}`}
+    prepare({title, publisher, publishedAt}) {
+      const date = publishedAt
+        ? new Intl.DateTimeFormat('en-NZ', {
+            timeZone: 'Pacific/Auckland',
+            dateStyle: 'medium',
+          }).format(new Date(publishedAt))
+        : null
+      return {
+        title,
+        subtitle: [publisher, date].filter(Boolean).join(' · '),
+      }
     },
   },
 })
