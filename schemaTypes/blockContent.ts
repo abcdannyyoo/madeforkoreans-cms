@@ -50,6 +50,11 @@ export default defineType({
                 title: 'URL',
                 name: 'href',
                 type: 'url',
+                validation: (R) =>
+                  R.uri({
+                    scheme: ['http', 'https', 'mailto', 'tel'],
+                    allowRelative: true,
+                  }),
               },
             ],
           },
